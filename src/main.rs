@@ -29,7 +29,6 @@ async fn main() -> Result<()> {
             let exe_path = PathBuf::from(".").join(file_path);
             let command = Arc::new(WatchCommand {
                 program: Program::Exec {
-                    //   prog: file_path.to_path_buf(),
                     prog: exe_path,
                     args: vec![],
                 },
@@ -39,34 +38,18 @@ async fn main() -> Result<()> {
                 let command = command.clone();
                 let job = action.get_or_create_job(id, move || command.clone());
                 job.start();
-                // if Ctrl-C is received, quit
                 if action.signals().any(|sig| sig == Signal::Interrupt) {
+                    // Reminder: if you delete this Ctrl+c won't work
                     action.quit();
                 };
                 action
             });
             let watch_path = WatchedPath::non_recursive(file_path);
-            //wx.config.pathset(vec![watch_path]);
-            wx.config.pathset(vec!["example.bash"]);
+            wx.config.pathset(vec![watch_path]);
             let _ = wx.main().await?;
-
-            //println!("Found: {}", file.display());
         } else {
             println!("Error: file does not exist");
         }
     };
-
     Ok(())
-
-    // let wx = Watchexec::new(|mut action| {
-    //     // print any events
-    //     for event in action.events.iter() {
-    //         eprintln!("EVENT: {event:?}");
-    //     }
-    //     // if Ctrl-C is received, quit
-    //     if action.signals().any(|sig| sig == Signal::Interrupt) {
-    //         action.quit();
-    //     }
-    //     action
-    // })?;
 }
