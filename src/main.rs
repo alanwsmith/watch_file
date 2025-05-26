@@ -1,4 +1,3 @@
-#![allow(unused)]
 use anyhow::Result;
 use clap::{Arg, Command};
 use std::path::PathBuf;
@@ -24,6 +23,8 @@ async fn main() -> Result<()> {
         .get_matches();
     if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
         if file_path.exists() {
+            let file_string = file_path.display().to_string();
+            println!("Watching: {}", &file_string);
             let wx = Watchexec::default();
             let id = Id::default();
             let exe_path = PathBuf::from(".").join(file_path);
@@ -35,6 +36,7 @@ async fn main() -> Result<()> {
                 options: Default::default(),
             });
             wx.config.on_action(move |mut action| {
+                println!("Running: {}", file_string);
                 let command = command.clone();
                 let job = action.get_or_create_job(id, move || command.clone());
                 job.start();
