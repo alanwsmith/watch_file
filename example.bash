@@ -1,14 +1,15 @@
 #!/bin/bash
 
-echo "Hello, World"
-echo "The quick brown fox at"
-
-sleep 4
-
-echo "asdf"
+echo "Wait for it..."
+sleep 1
+echo "The quick brown fox was here"
 
 
-echo $(date} > ping.txt
+
+
+
+
+
 
 
 
