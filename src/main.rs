@@ -1,21 +1,16 @@
-#![allow(unused)]
 use anyhow::Result;
 use anyhow::anyhow;
 use chrono::Local;
 use clap::{arg, command};
-use core::time::Duration;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
-use watchexec::Id;
 use watchexec::WatchedPath;
 use watchexec::Watchexec;
 use watchexec::command::Command as WatchCommand;
 use watchexec::command::Program;
 use watchexec::command::Shell;
-use watchexec::job::Job;
-use watchexec::job::JobTaskContext;
 use watchexec_signals::Signal;
 
 struct Runner {
@@ -35,10 +30,6 @@ impl Runner {
         let base = self.script_name()?;
         let result = format!("./{}", base);
         Ok(result)
-    }
-
-    pub fn do_cd() -> Option<String> {
-        None
     }
 
     pub fn new() -> Runner {
@@ -67,7 +58,6 @@ impl Runner {
 
     pub async fn run(&self) -> Result<()> {
         let wx = Watchexec::default();
-        let id = Id::default();
         let cd_to = self.cd_to();
         let quiet = self.quiet.clone();
         let requested_path = self.requested_path.clone();
@@ -80,19 +70,19 @@ impl Runner {
         wx.config.on_action(move |mut action| {
             clearscreen::clear().unwrap();
             if let Some(target_dir) = cd_to.as_ref() {
-                std::env::set_current_dir(target_dir).is_ok();
+                let _ = std::env::set_current_dir(target_dir).is_ok();
             }
             let cd_to = cd_to.clone();
-            let quite = quiet.clone();
+            let quiet = quiet.clone();
             let script_name = script_name.clone();
             let watch_command = watch_command.clone();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
             } else {
-                action.list_jobs().for_each(|(id, job)| {
+                action.list_jobs().for_each(|(_, job)| {
                     job.delete_now();
                 });
-                let (id, job) = action.create_job(watch_command.clone());
+                let (_, job) = action.create_job(watch_command.clone());
                 let now = Local::now();
                 let start = Instant::now();
                 job.start();
@@ -122,7 +112,7 @@ impl Runner {
         });
         let watch_path = WatchedPath::non_recursive(&self.requested_path.to_path_buf());
         wx.config.pathset(vec![watch_path]);
-        wx.main().await?;
+        let _ = wx.main().await?;
         Ok(())
     }
 
@@ -148,23 +138,9 @@ impl Runner {
     }
 }
 
-async fn ping(job: &Job) {
-    job.to_wait().await;
-    println!("44444444444444444444444444444444444444");
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let runner = Runner::new();
     runner.run().await?;
-
-    //                    // dbg!(exe_path.display());
-    //                    let now = Local::now();
-    //                    let start = Instant::now();
-    //                    job.restart().await;
-    //                    job.to_wait().await;
-    //                    let elapsed_time = start.elapsed();
-    //                };
-
     Ok(())
 }
