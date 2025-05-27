@@ -63,13 +63,19 @@ impl Runner {
     }
 
     pub async fn run(&self) -> Result<()> {
-        dbg!(&self.script_name());
         let wx = Watchexec::default();
         let id = Id::default();
-        let watch_command = self.watch_command();
         let cd_to = self.cd_to();
+        let quiet = self.quiet.clone();
+        let requested_path = self.requested_path.clone();
+        let watch_command = self.watch_command();
+        clearscreen::clear().unwrap();
+        if !quiet {
+            println!("Watching: {}", requested_path.display());
+        }
         wx.config.on_action_async(move |mut action| {
             let cd_to = cd_to.clone();
+            let quite = quiet.clone();
             let watch_command = watch_command.clone();
             Box::new(async move {
                 if let Some(target_dir) = cd_to {
