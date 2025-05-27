@@ -16,6 +16,7 @@ use watchexec::command::Command as WatchCommand;
 use watchexec::command::Program;
 use watchexec::command::Shell;
 use watchexec::job::Job;
+use watchexec::job::JobTaskContext;
 use watchexec_signals::Signal;
 
 struct Runner {
@@ -90,31 +91,48 @@ impl Runner {
                 let job: Job = action.get_or_create_job(id, move || watch_command.clone());
 
                 job.set_spawn_hook(|x, y| {
-                    Box::new(async move {
-                        let cmd = x.command_mut().status().await;
-                        dbg!(&cmd);
-                    });
+                    {
+                        let w = process_wrap::tokio::ProcessGroup::leader();
+                        x.wrap(w);
 
-                    //dbg!(x.command_mut());
+                        //x.command_mut()
 
-                    //let eee = async |_| -> bool {
-                    //    //dbg!("sdaf");
-                    //    //dbg!(x);
-                    //    true
-                    //};
-                    //()
+                        //x.wrap(process_wrap::std::ProcessGroup::leader());
+                        //dbg!("pint");
+                        // x.wr
+                        //
 
-                    //Box::new(async move {
-                    //        // let cmd = x.command();
-                    //    })
-                    //    // async |e| {
-                    //    //     dbg!(e);
-                    //    // };
-                    //    //let thing: Result<std::process::ExitStatus> = x.command().status().await;
-                    //    //dbg!(x.command().status().await.unwrap());
-                    //    // dbg!(&cmd.status());
-                    //        ()
-                    //})
+                        // let d = x.command_mut();
+                        // dbg!(x);
+                        // // dbg!(d);
+
+                        // Box::new(async move || {
+                        //     dbg!("2222222222222222");
+                        //     let cmd = x.command_mut().status().await;
+                        //     // dbg!(&cmd);
+                        // });
+
+                        //dbg!(x.command_mut());
+
+                        //let eee = async |_| -> bool {
+                        //    //dbg!("sdaf");
+                        //    //dbg!(x);
+                        //    true
+                        //};
+                        //()
+
+                        //Box::new(async move {
+                        //        // let cmd = x.command();
+                        //    })
+                        //    // async |e| {
+                        //    //     dbg!(e);
+                        //    // };
+                        //    //let thing: Result<std::process::ExitStatus> = x.command().status().await;
+                        //    //dbg!(x.command().status().await.unwrap());
+                        //    // dbg!(&cmd.status());
+                        //        ()
+                        //})
+                    }
                 });
 
                 //job.set_spawn_async_hook(async |x: &mut TokioCommandWrap, &y| {
