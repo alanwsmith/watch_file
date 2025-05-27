@@ -1,5 +1,6 @@
 #![allow(unused)]
 use anyhow::Result;
+use anyhow::anyhow;
 use chrono::Local;
 use clap::{arg, command};
 use std::path::PathBuf;
@@ -20,17 +21,6 @@ struct Runner {
 }
 
 impl Runner {
-    pub fn command(&self) -> Arc<WatchCommand> {
-        Arc::new(WatchCommand {
-            program: Program::Shell {
-                shell: Shell::new("bash"),
-                command: "ls".into(),
-                args: vec![],
-            },
-            options: Default::default(),
-        })
-    }
-
     pub fn new() -> Runner {
         let matches = command!()
             .arg(
@@ -56,13 +46,14 @@ impl Runner {
     }
 
     pub async fn run(&self) -> Result<()> {
+        dbg!(&self.script_name());
         let wx = Watchexec::default();
         let id = Id::default();
-        let command = self.command();
+        let watch_command = self.watch_command();
         wx.config.on_action_async(move |mut action| {
-            let command = command.clone();
+            let watch_command = watch_command.clone();
             Box::new(async move {
-                let job: Job = action.get_or_create_job(id, move || command.clone());
+                let job: Job = action.get_or_create_job(id, move || watch_command.clone());
                 if action.signals().any(|sig| sig == Signal::Interrupt) {
                     // Reminder: Ctrl+c won't work if you delete `action.quite()`
                     action.quit();
@@ -77,6 +68,27 @@ impl Runner {
         wx.config.pathset(vec![watch_path]);
         wx.main().await?;
         Ok(())
+    }
+
+    pub fn script_name(&self) -> Result<String> {
+        let result = self
+            .requested_path
+            .file_name()
+            .ok_or_else(|| anyhow!("Could not get script name"))?
+            .to_string_lossy()
+            .to_string();
+        Ok(result)
+    }
+
+    pub fn watch_command(&self) -> Arc<WatchCommand> {
+        Arc::new(WatchCommand {
+            program: Program::Shell {
+                shell: Shell::new("bash"),
+                command: "ls".into(),
+                args: vec![],
+            },
+            options: Default::default(),
+        })
     }
 }
 
