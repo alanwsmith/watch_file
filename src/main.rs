@@ -87,8 +87,20 @@ impl Runner {
                     // Reminder: Ctrl+c won't work if you delete `action.quite()`
                     action.quit();
                 } else {
+                    let now = Local::now();
+                    let start = Instant::now();
                     job.restart().await;
                     job.to_wait().await;
+                    let elapsed_time = start.elapsed();
+                    if !quiet {
+                        println!("----------------------------------");
+                        println!(
+                            "Started: {}",
+                            now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                        );
+                        // println!("Ran: {}", exe_path.display());
+                        println!("Took: {}ms", elapsed_time.as_millis(),);
+                    }
                 };
                 action
             })
@@ -132,15 +144,6 @@ async fn main() -> Result<()> {
     //                    job.restart().await;
     //                    job.to_wait().await;
     //                    let elapsed_time = start.elapsed();
-    //                    if !quiet {
-    //                        println!("----------------------------------");
-    //                        println!(
-    //                            "Started: {}",
-    //                            now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-    //                        );
-    //                        println!("Ran: {}", exe_path.display());
-    //                        println!("Took: {}ms", elapsed_time.as_millis(),);
-    //                    }
     //                };
 
     Ok(())
