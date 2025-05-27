@@ -88,108 +88,38 @@ impl Runner {
             let watch_command = watch_command.clone();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
+            } else {
+                action.list_jobs().for_each(|(id, job)| {
+                    job.delete_now();
+                });
+                let (id, job) = action.create_job(watch_command.clone());
+                let now = Local::now();
+                let start = Instant::now();
+                job.start();
+                tokio::spawn(async move {
+                    job.to_wait().await;
+                    if !job.is_dead() {
+                        let elapsed_time = start.elapsed();
+                        if !quiet {
+                            println!("-----------------------------------");
+                            println!(
+                                "started | {}",
+                                now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            );
+                            if let Some(cded) = cd_to {
+                                if cded != Path::new("") && cded != Path::new(".") {
+                                    println!("cd      | {}", cded.display());
+                                }
+                            }
+                            println!("ran     | {}", script_name);
+                            println!("took    | {}ms", elapsed_time.as_millis(),);
+                            println!("-----------------------------------");
+                        }
+                    }
+                });
             }
-            action.list_jobs().for_each(|(id, job)| {
-                job.delete_now();
-            });
-            let (id, job) = action.create_job(watch_command.clone());
-            job.start();
-            tokio::spawn(async move {
-                job.to_wait().await;
-                if !job.is_dead() {
-                    println!("DONEDONEDONEDONE");
-                }
-            });
             action
         });
-
-        //        let job: Job = action.get_or_create_job(id, move || watch_command.clone());
-        //        job.set_spawn_hook(|x, y| {
-        //            {
-        //                let w = process_wrap::tokio::ProcessGroup::leader();
-        //                x.wrap(w);
-        //                //x.command_mut()
-        //                //
-        //                //x.wrap(process_wrap::std::ProcessGroup::leader());
-        //                //dbg!("pint");
-        //                // x.wr
-        //                //
-        //                // let d = x.command_mut();
-        //                // dbg!(x);
-        //                // // dbg!(d);
-        //                // Box::new(async move || {
-        //                //     dbg!("2222222222222222");
-        //                //     let cmd = x.command_mut().status().await;
-        //                //     // dbg!(&cmd);
-        //                // });
-        //                //dbg!(x.command_mut());
-        //                //let eee = async |_| -> bool {
-        //                //    //dbg!("sdaf");
-        //                //    //dbg!(x);
-        //                //    true
-        //                //};
-        //                //()
-        //                //Box::new(async move {
-        //                //        // let cmd = x.command();
-        //                //    })
-        //                //    // async |e| {
-        //                //    //     dbg!(e);
-        //                //    // };
-        //                //    //let thing: Result<std::process::ExitStatus> = x.command().status().await;
-        //                //    //dbg!(x.command().status().await.unwrap());
-        //                //    // dbg!(&cmd.status());
-        //                //        ()
-        //                //})
-        //            }
-        //        });
-        //        //job.set_spawn_async_hook(async |x: &mut TokioCommandWrap, &y| {
-        //        //    //Box::new(async move {
-        //        //    //        // let cmd = x.command();
-        //        //    //    })
-        //        //    //    // async |e| {
-        //        //    //    //     dbg!(e);
-        //        //    //    // };
-        //        //    //    //let thing: Result<std::process::ExitStatus> = x.command().status().await;
-        //        //    //    //dbg!(x.command().status().await.unwrap());
-        //        //    //    // dbg!(&cmd.status());
-        //        //    //        ()
-        //        //    //})
-        //        //});
-        //        // dbg!(&action);
-        //        if action.signals().any(|sig| sig == Signal::Interrupt) {
-        //            // Reminder: Ctrl+c won't work if you
-        //            // delete this `action.quite()` line
-        //            action.quit();
-        //        } else {
-        //            // println!("eeeeeeeeeeeeeeeeeeeeee");
-        //            let now = Local::now();
-        //            let start = Instant::now();
-        //            // job.run().await;
-        //            // job.restart_with_signal(Signal::Interrupt, Duration::from_millis(100))
-        //            //     .await;
-        //            // job.to_wait().await;
-        //            //
-        //            // let elapsed_time = start.elapsed();
-        //            // if !quiet {
-        //            //     println!("-----------------------------------");
-        //            //     println!(
-        //            //         "started | {}",
-        //            //         now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-        //            //     );
-        //            //     if let Some(cded) = cd_to {
-        //            //         if cded != Path::new("") && cded != Path::new(".") {
-        //            //             println!("cd      | {}", cded.display());
-        //            //         }
-        //            //     }
-        //            //     println!("ran     | {}", script_name);
-        //            //     println!("took    | {}ms", elapsed_time.as_millis(),);
-        //            //     println!("-----------------------------------");
-        //            // }
-        //        };
-        //        action
-        //    })
-        //});
-
         let watch_path = WatchedPath::non_recursive(&self.requested_path.to_path_buf());
         wx.config.pathset(vec![watch_path]);
         wx.main().await?;
