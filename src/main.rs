@@ -21,6 +21,12 @@ struct Runner {
 }
 
 impl Runner {
+    pub fn command(&self) -> Result<String> {
+        let base = self.script_name()?;
+        let result = format!("./{}", base);
+        Ok(result)
+    }
+
     pub fn new() -> Runner {
         let matches = command!()
             .arg(
@@ -84,7 +90,7 @@ impl Runner {
         Arc::new(WatchCommand {
             program: Program::Shell {
                 shell: Shell::new("bash"),
-                command: "ls".into(),
+                command: self.command().unwrap(),
                 args: vec![],
             },
             options: Default::default(),
