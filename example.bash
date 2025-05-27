@@ -1,10 +1,5 @@
 #!/bin/bash
 
-echo "Hello, Worlxd"
-
-
-
-
-
-
+echo "Hello, World"
+echo $(date)
 

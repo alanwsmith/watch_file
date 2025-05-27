@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Local;
 use clap::{Arg, Command};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -23,11 +24,12 @@ async fn main() -> Result<()> {
         .get_matches();
     if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
         if file_path.exists() {
-            let file_string = file_path.display().to_string();
-            println!("Watching: {}", &file_string);
+            clearscreen::clear().unwrap();
+            println!("Watching: {}", file_path.display());
+            let exe_path = PathBuf::from(".").join(file_path);
+            let file_string = exe_path.display().to_string();
             let wx = Watchexec::default();
             let id = Id::default();
-            let exe_path = PathBuf::from(".").join(file_path);
             let command = Arc::new(WatchCommand {
                 program: Program::Exec {
                     prog: exe_path,
@@ -36,7 +38,14 @@ async fn main() -> Result<()> {
                 options: Default::default(),
             });
             wx.config.on_action(move |mut action| {
-                println!("Running: {}", file_string);
+                clearscreen::clear().unwrap();
+                let now = Local::now();
+                println!(
+                    "Running: {} at {}",
+                    file_string,
+                    now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                );
+                //println!("Running: {}", file_string);
                 let command = command.clone();
                 let job = action.get_or_create_job(id, move || command.clone());
                 job.start();
