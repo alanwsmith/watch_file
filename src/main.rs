@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::Local;
-use clap::{Arg, Command};
+use clap::{arg, command};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio;
@@ -13,19 +13,22 @@ use watchexec_signals::Signal;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = Command::new("watcher")
+    let matches = command!()
         .arg(
-            Arg::new("file_path")
-                .index(1)
+            arg!([file_path])
                 .required(true)
-                .value_parser(clap::value_parser!(PathBuf))
-                .help("The file to watch and run when it changes."),
+                .value_parser(clap::value_parser!(PathBuf)),
         )
+        .arg(arg!(
+-q --quite "Don't print Running/date line before each run"))
         .get_matches();
+    let quite = matches.get_flag("quite");
     if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
         if file_path.exists() {
             clearscreen::clear().unwrap();
-            println!("Watching: {}", file_path.display());
+            if !quite {
+                println!("Watching: {}", file_path.display());
+            }
             let exe_path = PathBuf::from(".").join(file_path);
             let file_string = exe_path.display().to_string();
             let wx = Watchexec::default();
@@ -40,12 +43,13 @@ async fn main() -> Result<()> {
             wx.config.on_action(move |mut action| {
                 clearscreen::clear().unwrap();
                 let now = Local::now();
-                println!(
-                    "Running: {} at {}",
-                    file_string,
-                    now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                );
-                //println!("Running: {}", file_string);
+                if !quite {
+                    println!(
+                        "Running: {} at {}",
+                        file_string,
+                        now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                    );
+                }
                 let command = command.clone();
                 let job = action.get_or_create_job(id, move || command.clone());
                 job.start();
