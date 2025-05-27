@@ -78,35 +78,23 @@ impl Runner {
             println!("Watching: {}", requested_path.display());
         }
 
-        wx.config.on_action_async(move |mut action| {
+        wx.config.on_action(move |mut action| {
             let watch_command = watch_command.clone();
-            Box::new(async move {
-                if action.signals().any(|sig| sig == Signal::Interrupt) {
-                    action.quit(); // Needed for Ctrl+c
+            if action.signals().any(|sig| sig == Signal::Interrupt) {
+                action.quit(); // Needed for Ctrl+c
+            }
+            action.list_jobs().for_each(|(id, job)| {
+                job.delete_now();
+            });
+            let (id, job) = action.create_job(watch_command.clone());
+            job.start();
+            tokio::spawn(async move {
+                job.to_wait().await;
+                if !job.is_dead() {
+                    println!("DONEDONEDONEDONE");
                 }
-                action.list_jobs().for_each(|(id, job)| {
-                    job.delete_now();
-                });
-                let (id, job) = action.create_job(watch_command.clone());
-                job.start().await;
-                //job.restart().await;
-                tokio::spawn(async move {
-                    job.to_wait().await;
-                    if !job.is_dead() {
-                        println!("DONEDONEDONEDONE");
-                    } else {
-                        println!("papapapapappapapapased");
-                    }
-                    //process(socket).await;
-                });
-
-                // job.to_wait().await;
-                // ping(&job).await;
-                // for event in action.events.iter() {
-                //     println!("{event:?}");
-                // }
-                action
-            })
+            });
+            action
         });
 
         //wx.config.on_action_async(move |mut action| {
