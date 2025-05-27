@@ -1125,6 +1125,7 @@ dependencies = [
  "chrono",
  "clap",
  "clearscreen",
+ "process-wrap",
  "tokio",
  "watchexec",
  "watchexec-signals",
