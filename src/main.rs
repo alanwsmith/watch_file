@@ -77,8 +77,14 @@ impl Runner {
         if !quiet {
             println!("Watching: {}", requested_path.display());
         }
-
         wx.config.on_action(move |mut action| {
+            clearscreen::clear().unwrap();
+            if let Some(target_dir) = cd_to.as_ref() {
+                std::env::set_current_dir(target_dir).is_ok();
+            }
+            let cd_to = cd_to.clone();
+            let quite = quiet.clone();
+            let script_name = script_name.clone();
             let watch_command = watch_command.clone();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
@@ -97,15 +103,6 @@ impl Runner {
             action
         });
 
-        //wx.config.on_action_async(move |mut action| {
-        //    let cd_to = cd_to.clone();
-        //    let quite = quiet.clone();
-        //    let script_name = script_name.clone();
-        //    Box::new(async move {
-        //        //clearscreen::clear().unwrap();
-        //        if let Some(target_dir) = cd_to.as_ref() {
-        //            std::env::set_current_dir(target_dir).is_ok();
-        //        }
         //        let job: Job = action.get_or_create_job(id, move || watch_command.clone());
         //        job.set_spawn_hook(|x, y| {
         //            {
