@@ -4,7 +4,6 @@ use clap::{arg, command};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
-use tokio;
 use watchexec::Id;
 use watchexec::WatchedPath;
 use watchexec::Watchexec;
