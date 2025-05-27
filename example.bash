@@ -1,20 +1,7 @@
 #!/bin/bash
 
 echo "Wait for it..."
-sleep 1
+sleep 3
 echo "The quick brown fox was here"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+echo "Process complete"
 
