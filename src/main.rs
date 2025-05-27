@@ -73,7 +73,8 @@ async fn main() -> Result<()> {
             wx.config.pathset(vec![watch_path]);
             let _ = wx.main().await?;
         } else {
-            println!("Error: file does not exist");
+            eprintln!("Error: file '{}' does not exist", file_path.display());
+            std::process::exit(1);
         }
     };
     Ok(())
