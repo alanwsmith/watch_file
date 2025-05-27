@@ -29,7 +29,8 @@ async fn main() -> Result<()> {
         if file_path.exists() {
             let wx = Watchexec::default();
             let id = Id::default();
-            let exe_path = PathBuf::from(".").join(file_path);
+            //let exe_path = PathBuf::from(".").join(file_path);
+            let exe_path = file_path.to_path_buf();
             let command = Arc::new(WatchCommand {
                 program: Program::Shell {
                     shell: Shell::new("/bin/bash"),
