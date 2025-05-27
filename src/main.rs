@@ -79,12 +79,13 @@ impl Runner {
             let watch_command = watch_command.clone();
             Box::new(async move {
                 clearscreen::clear().unwrap();
-                if let Some(target_dir) = cd_to {
+                if let Some(target_dir) = cd_to.as_ref() {
                     std::env::set_current_dir(target_dir).is_ok();
                 }
                 let job: Job = action.get_or_create_job(id, move || watch_command.clone());
                 if action.signals().any(|sig| sig == Signal::Interrupt) {
-                    // Reminder: Ctrl+c won't work if you delete `action.quite()`
+                    // Reminder: Ctrl+c won't work if you
+                    // delete this `action.quite()` line
                     action.quit();
                 } else {
                     let now = Local::now();
@@ -95,11 +96,14 @@ impl Runner {
                     if !quiet {
                         println!("----------------------------------");
                         println!(
-                            "Started: {}",
+                            "started: {}",
                             now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         );
+                        if let Some(cded) = cd_to {
+                            println!("cd: {}", cded.display());
+                        }
                         // println!("Ran: {}", exe_path.display());
-                        println!("Took: {}ms", elapsed_time.as_millis(),);
+                        println!("took: {}ms", elapsed_time.as_millis(),);
                     }
                 };
                 action
