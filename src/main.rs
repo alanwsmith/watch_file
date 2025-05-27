@@ -69,6 +69,7 @@ impl Runner {
         let cd_to = self.cd_to();
         let quiet = self.quiet.clone();
         let requested_path = self.requested_path.clone();
+        let script_name = self.script_name()?;
         let watch_command = self.watch_command();
         clearscreen::clear().unwrap();
         if !quiet {
@@ -77,6 +78,7 @@ impl Runner {
         wx.config.on_action_async(move |mut action| {
             let cd_to = cd_to.clone();
             let quite = quiet.clone();
+            let script_name = script_name.clone();
             let watch_command = watch_command.clone();
             Box::new(async move {
                 clearscreen::clear().unwrap();
@@ -95,18 +97,18 @@ impl Runner {
                     job.to_wait().await;
                     let elapsed_time = start.elapsed();
                     if !quiet {
-                        println!("----------------------------------");
+                        println!("-----------------------------------");
                         println!(
-                            "started: {}",
+                            "started | {}",
                             now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         );
                         if let Some(cded) = cd_to {
                             if cded != Path::new("") && cded != Path::new(".") {
-                                println!("cd: {}", cded.display());
+                                println!("cd      | {}", cded.display());
                             }
                         }
-                        // println!("Ran: {}", exe_path.display());
-                        println!("took: {}ms", elapsed_time.as_millis(),);
+                        println!("ran     | {}", script_name);
+                        println!("took    | {}ms", elapsed_time.as_millis(),);
                     }
                 };
                 action
