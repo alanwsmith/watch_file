@@ -27,13 +27,9 @@ async fn main() -> Result<()> {
     let quiet = matches.get_flag("quiet");
     if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
         if file_path.exists() {
-            clearscreen::clear().unwrap();
-            if !quiet {
-                println!("Watching: {}", file_path.display());
-            }
-            let exe_path = PathBuf::from(".").join(file_path);
             let wx = Watchexec::default();
             let id = Id::default();
+            let exe_path = PathBuf::from(".").join(file_path);
             let command = Arc::new(WatchCommand {
                 program: Program::Exec {
                     prog: exe_path,
@@ -41,23 +37,27 @@ async fn main() -> Result<()> {
                 },
                 options: Default::default(),
             });
+            clearscreen::clear().unwrap();
+            if !quiet {
+                println!("Watching: {}", file_path.display());
+            }
             wx.config.on_action_async(move |mut action| {
                 let command = command.clone();
                 Box::new(async move {
+                    let command = command.clone();
+                    let job: Job = action.get_or_create_job(id, move || command.clone());
                     if action.signals().any(|sig| sig == Signal::Interrupt) {
-                        // Reminder: Ctrl+c won't work if you delete `action.quite()`
+                        // Reminder: Ctrl+c won't work if
+                        // you delete `action.quite()`
                         action.quit();
                     } else {
                         clearscreen::clear().unwrap();
                         let now = Local::now();
-                        let command = command.clone();
-                        let job: Job = action.get_or_create_job(id, move || command.clone());
                         let start = Instant::now();
                         job.restart().await;
                         job.to_wait().await;
                         let elapsed_time = start.elapsed();
                         if !quiet {
-                            println!("---------------------------------");
                             println!(
                                 "Started: {}",
                                 now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
