@@ -55,14 +55,27 @@ impl Runner {
         }
     }
 
-    // pub fn working_dir(&self) -> Option<PathBuf> {
-    //     None
-    // }
-
-    pub fn run(&self) -> Result<()> {
+    pub async fn run(&self) -> Result<()> {
         let wx = Watchexec::default();
         let id = Id::default();
-
+        let command = self.command();
+        wx.config.on_action_async(move |mut action| {
+            let command = command.clone();
+            Box::new(async move {
+                let job: Job = action.get_or_create_job(id, move || command.clone());
+                if action.signals().any(|sig| sig == Signal::Interrupt) {
+                    // Reminder: Ctrl+c won't work if you delete `action.quite()`
+                    action.quit();
+                } else {
+                    job.restart().await;
+                    job.to_wait().await;
+                };
+                action
+            })
+        });
+        let watch_path = WatchedPath::non_recursive(".");
+        wx.config.pathset(vec![watch_path]);
+        wx.main().await?;
         Ok(())
     }
 }
@@ -70,7 +83,7 @@ impl Runner {
 #[tokio::main]
 async fn main() -> Result<()> {
     let runner = Runner::new();
-    runner.run()?;
+    runner.run().await?;
 
     //if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
     //    if file_path.exists() {
