@@ -21,10 +21,21 @@ struct Runner {
 }
 
 impl Runner {
+    pub fn cd_to(&self) -> Option<PathBuf> {
+        match self.requested_path.parent() {
+            Some(p) => Some(p.to_path_buf()),
+            None => None,
+        }
+    }
+
     pub fn command(&self) -> Result<String> {
         let base = self.script_name()?;
         let result = format!("./{}", base);
         Ok(result)
+    }
+
+    pub fn do_cd() -> Option<String> {
+        None
     }
 
     pub fn new() -> Runner {
@@ -56,9 +67,14 @@ impl Runner {
         let wx = Watchexec::default();
         let id = Id::default();
         let watch_command = self.watch_command();
+        let cd_to = self.cd_to();
         wx.config.on_action_async(move |mut action| {
+            let cd_to = cd_to.clone();
             let watch_command = watch_command.clone();
             Box::new(async move {
+                if let Some(target_dir) = cd_to {
+                    std::env::set_current_dir(target_dir).is_ok();
+                }
                 let job: Job = action.get_or_create_job(id, move || watch_command.clone());
                 if action.signals().any(|sig| sig == Signal::Interrupt) {
                     // Reminder: Ctrl+c won't work if you delete `action.quite()`
@@ -70,7 +86,7 @@ impl Runner {
                 action
             })
         });
-        let watch_path = WatchedPath::non_recursive(".");
+        let watch_path = WatchedPath::non_recursive(&self.requested_path.to_path_buf());
         wx.config.pathset(vec![watch_path]);
         wx.main().await?;
         Ok(())
