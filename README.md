@@ -27,15 +27,14 @@ message.
 
 - DONE: Clears the terminal before each run
 
-- TODO: Prints a small report with a timestamp,
+- DONE: Prints a small report with a timestamp,
 if a CD happened, the name of the file,
 and the time it took to run. 
 
-- TODO: Sends signal to process to attempt
-to shut down gracefully before restarting
-if another change is detected. 
+- DONE: Kills the process and restarts it
+if a change occurs while its still running. 
 
-- TODO: Passing `-q` or `--quiet` turns off 
+- DONE: Passing `-q` or `--quiet` turns off 
 the initial `Watching` and ending
 report.
 
@@ -44,6 +43,12 @@ report.
 
 - If you set an ENV variable it'll 
 be available in the script
+
+- I'm not sure how much padding the
+timing check ads in terms of
+overhead. If you need something
+super accurate you'll want to build
+it into your process directly. 
 
 
 ## Someday/Maybe Features
@@ -59,4 +64,9 @@ different
 glob pattern of files to watch
 
 - Add a `-s|--shell` to set the shell
+
+- Look at sending a signal and waiting
+for process to close down during a
+grace period if there's a change
+while it's still running. 
 
