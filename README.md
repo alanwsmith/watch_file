@@ -25,7 +25,7 @@ runs when a change has occurred)
 prints a `Watching FILE_PATH` 
 message.
 
-- TODO: Clears the terminal before each run
+- DONE: Clears the terminal before each run
 
 - TODO: Prints a small report with a timestamp,
 if a CD happened, the name of the file,

@@ -78,6 +78,7 @@ impl Runner {
             let quite = quiet.clone();
             let watch_command = watch_command.clone();
             Box::new(async move {
+                clearscreen::clear().unwrap();
                 if let Some(target_dir) = cd_to {
                     std::env::set_current_dir(target_dir).is_ok();
                 }
@@ -125,46 +126,6 @@ async fn main() -> Result<()> {
     let runner = Runner::new();
     runner.run().await?;
 
-    //if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
-    //    if file_path.exists() {
-    //        if let Some(file_name) = file_path.file_name() {
-    //            dbg!(file_name);
-    //        }
-    //        let wx = Watchexec::default();
-    //        let id = Id::default();
-    //        //let exe_path = PathBuf::from(".").join(file_path);
-    //        let exe_path = file_path.to_path_buf();
-    //        let command = Arc::new(WatchCommand {
-    //            program: Program::Shell {
-    //                shell: Shell::new("bash"),
-    //                command: exe_path.display().to_string(),
-    //                // prog: "pwd".into(),
-    //                // prog: exe_path.clone(),
-    //                args: vec![],
-    //            },
-    //            // program: Program::Exec {
-    //            //     // prog: "pwd".into(),
-    //            //     prog: exe_path.clone(),
-    //            //     args: vec![],
-    //            // },
-    //            options: Default::default(),
-    //        });
-    //        clearscreen::clear().unwrap();
-    //        if !quiet {
-    //            println!("Watching: {}", file_path.display());
-    //        }
-    //        wx.config.on_action_async(move |mut action| {
-    //            let command = command.clone();
-    //            let exe_path = exe_path.clone();
-    //            Box::new(async move {
-    //                let command = command.clone();
-    //                let job: Job = action.get_or_create_job(id, move || command.clone());
-    //                if action.signals().any(|sig| sig == Signal::Interrupt) {
-    //                    // Reminder: Ctrl+c won't work if
-    //                    // you delete `action.quite()`
-    //                    action.quit();
-    //                } else {
-    //                    clearscreen::clear().unwrap();
     //                    // dbg!(exe_path.display());
     //                    let now = Local::now();
     //                    let start = Instant::now();
@@ -181,17 +142,6 @@ async fn main() -> Result<()> {
     //                        println!("Took: {}ms", elapsed_time.as_millis(),);
     //                    }
     //                };
-    //                action
-    //            })
-    //        });
-    //        let watch_path = WatchedPath::non_recursive(file_path);
-    //        wx.config.pathset(vec![watch_path]);
-    //        let _ = wx.main().await?;
-    //    } else {
-    //        eprintln!("Error: file '{}' does not exist", file_path.display());
-    //        std::process::exit(1);
-    //    }
-    //};
 
     Ok(())
 }
