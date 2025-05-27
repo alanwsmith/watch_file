@@ -9,6 +9,7 @@ use watchexec::WatchedPath;
 use watchexec::Watchexec;
 use watchexec::command::Command as WatchCommand;
 use watchexec::command::Program;
+use watchexec::command::Shell;
 use watchexec::job::Job;
 use watchexec_signals::Signal;
 
@@ -30,10 +31,18 @@ async fn main() -> Result<()> {
             let id = Id::default();
             let exe_path = PathBuf::from(".").join(file_path);
             let command = Arc::new(WatchCommand {
-                program: Program::Exec {
-                    prog: exe_path,
+                program: Program::Shell {
+                    shell: Shell::new("/bin/bash"),
+                    command: exe_path.display().to_string(),
+                    // prog: "pwd".into(),
+                    // prog: exe_path.clone(),
                     args: vec![],
                 },
+                // program: Program::Exec {
+                //     // prog: "pwd".into(),
+                //     prog: exe_path.clone(),
+                //     args: vec![],
+                // },
                 options: Default::default(),
             });
             clearscreen::clear().unwrap();
@@ -42,6 +51,7 @@ async fn main() -> Result<()> {
             }
             wx.config.on_action_async(move |mut action| {
                 let command = command.clone();
+                let exe_path = exe_path.clone();
                 Box::new(async move {
                     let command = command.clone();
                     let job: Job = action.get_or_create_job(id, move || command.clone());
@@ -51,6 +61,7 @@ async fn main() -> Result<()> {
                         action.quit();
                     } else {
                         clearscreen::clear().unwrap();
+                        // dbg!(exe_path.display());
                         let now = Local::now();
                         let start = Instant::now();
                         job.restart().await;
@@ -62,6 +73,7 @@ async fn main() -> Result<()> {
                                 "Started: {}",
                                 now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                             );
+                            println!("Ran: {}", exe_path.display());
                             println!("Took: {}ms", elapsed_time.as_millis(),);
                         }
                     };
