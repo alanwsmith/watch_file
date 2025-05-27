@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
                         job.to_wait().await;
                         let elapsed_time = start.elapsed();
                         if !quiet {
+                            println!("----------------------------------");
                             println!(
                                 "Started: {}",
                                 now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
