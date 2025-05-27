@@ -20,6 +20,17 @@ struct Runner {
 }
 
 impl Runner {
+    pub fn command(&self) -> Arc<WatchCommand> {
+        Arc::new(WatchCommand {
+            program: Program::Shell {
+                shell: Shell::new("bash"),
+                command: "ls".into(),
+                args: vec![],
+            },
+            options: Default::default(),
+        })
+    }
+
     pub fn new() -> Runner {
         let matches = command!()
             .arg(
@@ -43,11 +54,23 @@ impl Runner {
             requested_path,
         }
     }
+
+    // pub fn working_dir(&self) -> Option<PathBuf> {
+    //     None
+    // }
+
+    pub fn run(&self) -> Result<()> {
+        let wx = Watchexec::default();
+        let id = Id::default();
+
+        Ok(())
+    }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let runner = Runner::new();
+    runner.run()?;
 
     //if let Some(file_path) = matches.get_one::<PathBuf>("file_path") {
     //    if file_path.exists() {
