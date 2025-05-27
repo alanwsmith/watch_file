@@ -3,6 +3,7 @@ use anyhow::Result;
 use anyhow::anyhow;
 use chrono::Local;
 use clap::{arg, command};
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -100,7 +101,9 @@ impl Runner {
                             now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                         );
                         if let Some(cded) = cd_to {
-                            println!("cd: {}", cded.display());
+                            if cded != Path::new("") && cded != Path::new(".") {
+                                println!("cd: {}", cded.display());
+                            }
                         }
                         // println!("Ran: {}", exe_path.display());
                         println!("took: {}ms", elapsed_time.as_millis(),);
