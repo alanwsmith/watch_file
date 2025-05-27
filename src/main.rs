@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
             let exe_path = file_path.to_path_buf();
             let command = Arc::new(WatchCommand {
                 program: Program::Shell {
-                    shell: Shell::new("/bin/bash"),
+                    shell: Shell::new("bash"),
                     command: exe_path.display().to_string(),
                     // prog: "pwd".into(),
                     // prog: exe_path.clone(),
