@@ -1,5 +1,15 @@
 #!/bin/bash
 
 echo "Hello, World"
-echo $(date)
+echo "The quick brown fox at"
+
+sleep 1
+
+echo "asdf"
+
+
+
+
+
+
 
