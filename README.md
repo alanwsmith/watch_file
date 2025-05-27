@@ -21,13 +21,13 @@ The idea being that the app runs the same
 way all the time. That is, it only 
 runs when a change has occurred)
 
-- Clears the terminal on start and
+- TODO: Clears the terminal on start and
 prints a `Watching FILE_PATH` 
 message.
 
-- Clears the terminal before each run
+- TODO: Clears the terminal before each run
 
-- Prints a small report with a timestamp,
+- TODO: Prints a small report with a timestamp,
 if a CD happened, the name of the file,
 and the time it took to run. 
 
@@ -35,8 +35,9 @@ and the time it took to run.
 
 ## Options
 
-- Passing `-q` or `--quiet` prevents
-the Running/date line from showing up
+- TODO: Passing `-q` or `--quiet` turns off 
+the initial `Watching` and ending
+report.
 
 ## TODO
 
@@ -49,11 +50,10 @@ the current direction instead of
 CDing into the scripts dir if it's
 different
 
-- Provide `-g PATTERN` to get a 
+- Provide `-g|--glob PATTERN` to get a 
 glob pattern of files to watch
 
-- Add a `-s` to set the shell
-
+- Add a `-s|--shell` to set the shell
 
 
 ## NOTES
