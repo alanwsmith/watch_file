@@ -32,7 +32,6 @@ async fn main() -> Result<()> {
                 println!("Watching: {}", file_path.display());
             }
             let exe_path = PathBuf::from(".").join(file_path);
-            let file_string = exe_path.display().to_string();
             let wx = Watchexec::default();
             let id = Id::default();
             let command = Arc::new(WatchCommand {
@@ -43,28 +42,29 @@ async fn main() -> Result<()> {
                 options: Default::default(),
             });
             wx.config.on_action_async(move |mut action| {
-                if action.signals().any(|sig| sig == Signal::Interrupt) {
-                    // Reminder: if you delete this Ctrl+c won't work
-                    action.quit();
-                };
                 let command = command.clone();
                 Box::new(async move {
-                    clearscreen::clear().unwrap();
-                    let now = Local::now();
-                    let command = command.clone();
-                    let job: Job = action.get_or_create_job(id, move || command.clone());
-                    let start = Instant::now();
-                    job.restart().await;
-                    job.to_wait().await;
-                    let elapsed_time = start.elapsed();
-                    if !quiet {
-                        println!("---------------------------------");
-                        println!(
-                            "Started: {}",
-                            now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                        );
-                        println!("Took: {}ms", elapsed_time.as_millis(),);
-                    }
+                    if action.signals().any(|sig| sig == Signal::Interrupt) {
+                        // Reminder: Ctrl+c won't work if you delete `action.quite()`
+                        action.quit();
+                    } else {
+                        clearscreen::clear().unwrap();
+                        let now = Local::now();
+                        let command = command.clone();
+                        let job: Job = action.get_or_create_job(id, move || command.clone());
+                        let start = Instant::now();
+                        job.restart().await;
+                        job.to_wait().await;
+                        let elapsed_time = start.elapsed();
+                        if !quiet {
+                            println!("---------------------------------");
+                            println!(
+                                "Started: {}",
+                                now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                            );
+                            println!("Took: {}ms", elapsed_time.as_millis(),);
+                        }
+                    };
                     action
                 })
             });

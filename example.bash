@@ -3,9 +3,13 @@
 echo "Hello, World"
 echo "The quick brown fox at"
 
-sleep 1
+sleep 4
 
 echo "asdf"
+
+
+echo $(date} > ping.txt
+
 
 
 
