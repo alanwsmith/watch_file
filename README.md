@@ -38,6 +38,10 @@ if a change occurs while its still running.
 the initial `Watching` and ending
 report.
 
+- TODO: Using `-t|--then FILE_PATH` will 
+run the script at FILE_PATH after the
+main process is run. 
+
 
 ## NOTES
 
