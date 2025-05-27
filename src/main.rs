@@ -4,7 +4,6 @@ use anyhow::anyhow;
 use chrono::Local;
 use clap::{arg, command};
 use core::time::Duration;
-use process_wrap::tokio::TokioCommandWrap;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -89,8 +88,6 @@ impl Runner {
                     job.delete_now();
                 });
                 let (id, job) = action.create_job(watch_command.clone());
-
-                //job.stop();
                 job.start().await;
                 //job.restart().await;
                 tokio::spawn(async move {
