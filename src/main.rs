@@ -24,21 +24,22 @@ struct Payload {
 impl Payload {
     pub fn cd_to_file(&self) -> Result<()> {
         if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
-            std::env::set_current_dir(parent_dir).is_ok();
+            std::env::set_current_dir(parent_dir)?;
         }
-
         Ok(())
     }
 
-    pub fn command(&self) -> Arc<WatchCommand> {
-        Arc::new(WatchCommand {
-            program: Program::Shell {
-                shell: Shell::new("bash"),
-                command: "ls".into(),
-                args: vec![],
-            },
-            options: Default::default(),
-        })
+    pub fn command(&self) -> String {
+        format!(
+            "./{}",
+            self.raw_file_path
+                .as_ref()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .display()
+                .to_string()
+        )
     }
 
     pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
@@ -87,6 +88,17 @@ impl Payload {
                 std::process::exit(1);
             }
         }
+    }
+
+    pub fn watch_command(&self) -> Arc<WatchCommand> {
+        Arc::new(WatchCommand {
+            program: Program::Shell {
+                shell: Shell::new("bash"),
+                command: self.command(),
+                args: vec![],
+            },
+            options: Default::default(),
+        })
     }
 
     pub fn watch_path(&self) -> PathBuf {
@@ -268,7 +280,7 @@ impl RunnerV2 {
                 });
                 let payload = payload.clone();
                 payload.cd_to_file();
-                let (_, job) = action.create_job(payload.command());
+                let (_, job) = action.create_job(payload.watch_command());
                 job.start();
                 tokio::spawn(async move {
                     job.to_wait().await;
