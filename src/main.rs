@@ -15,6 +15,7 @@ use watchexec_signals::Signal;
 
 struct Runner {
     quiet: bool,
+    raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
     requested_path: PathBuf,
 }
@@ -41,10 +42,11 @@ impl Runner {
                     .value_parser(clap::value_parser!(PathBuf)),
             )
             .arg(arg!(
-    -q --quiet "Don't print Running/date line before each run"))
+    -q --quiet "Only print script output"))
             .arg(
                 arg!(
-    -t --then [then] "Process to run after the main process is done.")
+    -t --then <then_path>
+                "Script to run after the main process is done")
                 .value_parser(clap::value_parser!(PathBuf)),
             )
             .get_matches();
@@ -58,7 +60,10 @@ impl Runner {
         }
         let r = Runner {
             quiet: matches.get_flag("quiet"),
+            raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
             raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
+            // TODO: deprecate requested_path to use
+            // method calls on raw_file_path
             requested_path,
         };
         r.validate_paths();
@@ -136,6 +141,12 @@ impl Runner {
     }
 
     pub fn validate_paths(&self) {
+        if let Some(file_path) = &self.raw_file_path {
+            if !file_path.exists() {
+                eprintln!("ERROR: {} does not exist", file_path.display());
+                std::process::exit(1);
+            }
+        }
         if let Some(then_path) = &self.raw_then_path {
             if !then_path.exists() {
                 eprintln!("ERROR: {} does not exist", then_path.display());
