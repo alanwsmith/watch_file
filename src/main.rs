@@ -25,14 +25,14 @@ struct Payload {
 }
 
 impl Payload {
-    pub fn cd_to_file(&self) -> Result<()> {
+    pub fn file_cd(&self) -> Result<()> {
         if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
             std::env::set_current_dir(parent_dir)?;
         }
         Ok(())
     }
 
-    pub fn command(&self) -> String {
+    pub fn file_command(&self) -> String {
         format!(
             "./{}",
             self.raw_file_path
@@ -43,6 +43,17 @@ impl Payload {
                 .display()
                 .to_string()
         )
+    }
+
+    pub fn file_job(&self) -> Arc<WatchCommand> {
+        Arc::new(WatchCommand {
+            program: Program::Shell {
+                shell: Shell::new("bash"),
+                command: self.file_command(),
+                args: vec![],
+            },
+            options: Default::default(),
+        })
     }
 
     pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>, bool)> {
@@ -119,17 +130,6 @@ impl Payload {
         }
     }
 
-    pub fn watch_command(&self) -> Arc<WatchCommand> {
-        Arc::new(WatchCommand {
-            program: Program::Shell {
-                shell: Shell::new("bash"),
-                command: self.command(),
-                args: vec![],
-            },
-            options: Default::default(),
-        })
-    }
-
     pub fn watch_path(&self) -> PathBuf {
         self.raw_file_path.as_ref().unwrap().to_path_buf()
     }
@@ -204,7 +204,7 @@ impl Runner {
         let quiet = self.quiet.clone();
         let requested_path = self.requested_path.clone();
         let script_name = self.script_name()?;
-        let watch_command = self.watch_command();
+        let file_job = self.file_job();
         clearscreen::clear().unwrap();
         if !quiet {
             println!("Watching: {}", requested_path.display());
@@ -217,14 +217,14 @@ impl Runner {
             let cd_to = cd_to.clone();
             let quiet = quiet.clone();
             let script_name = script_name.clone();
-            let watch_command = watch_command.clone();
+            let file_job = file_job.clone();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
             } else {
                 action.list_jobs().for_each(|(_, job)| {
                     job.delete_now();
                 });
-                let (_, job) = action.create_job(watch_command.clone());
+                let (_, job) = action.create_job(file_job.clone());
                 let now = Local::now();
                 let start = Instant::now();
                 job.start();
@@ -268,7 +268,7 @@ impl Runner {
         Ok(result)
     }
 
-    pub fn watch_command(&self) -> Arc<WatchCommand> {
+    pub fn file_job(&self) -> Arc<WatchCommand> {
         Arc::new(WatchCommand {
             program: Program::Shell {
                 shell: Shell::new("bash"),
@@ -316,14 +316,15 @@ impl RunnerV2 {
                     job.delete_now();
                 });
                 let mut payload = payload.clone();
-                payload.cd_to_file();
-                let (_, job) = action.create_job(payload.watch_command());
+                payload.file_cd();
+                let (_, job) = action.create_job(payload.file_job());
                 payload.mark_time();
                 job.start();
                 tokio::spawn(async move {
                     job.to_wait().await;
                     if !job.is_dead() {
                         payload.print_report();
+                        //let (_, job) = action.create_job(payload.then_command());
                     }
                 });
             }
