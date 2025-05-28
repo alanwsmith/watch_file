@@ -284,7 +284,9 @@ impl RunnerV2 {
                 job.start();
                 tokio::spawn(async move {
                     job.to_wait().await;
-                    println!("asdfasdfasdfds");
+                    if !job.is_dead() {
+                        println!("asdfasdfasdfds");
+                    }
                 });
             }
             action
