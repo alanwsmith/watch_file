@@ -13,6 +13,7 @@ use watchexec::Watchexec;
 use watchexec::command::Command as WatchCommand;
 use watchexec::command::Program;
 use watchexec::command::Shell;
+use watchexec::job::Job;
 use watchexec_signals::Signal;
 
 #[derive(Debug, Clone)]
@@ -116,6 +117,40 @@ impl Payload {
                 time,
                 elapsed_time.as_millis()
             );
+        }
+    }
+
+    pub fn then_cd(&self) -> Result<()> {
+        std::env::set_current_dir(self.initial_dir.as_ref().unwrap())?;
+        if let Some(parent_dir) = self.raw_then_path.as_ref().unwrap().parent() {
+            std::env::set_current_dir(parent_dir)?;
+        }
+        Ok(())
+    }
+
+    pub fn then_command(&self) -> Option<String> {
+        if let Some(raw_then_path) = self.raw_then_path.as_ref() {
+            Some(format!(
+                "./{}",
+                raw_then_path.file_name().unwrap().display().to_string()
+            ))
+        } else {
+            None
+        }
+    }
+
+    pub fn then_job(&self) -> Option<Arc<WatchCommand>> {
+        if let Some(then_command) = self.then_command() {
+            Some(Arc::new(WatchCommand {
+                program: Program::Shell {
+                    shell: Shell::new("bash"),
+                    command: then_command,
+                    args: vec![],
+                },
+                options: Default::default(),
+            }))
+        } else {
+            None
         }
     }
 
@@ -325,15 +360,25 @@ impl RunnerV2 {
                     job.delete_now();
                 });
                 let mut payload = payload.clone();
+                let mut then_job_local: Option<Job> = None;
+                if let Some(then_job) = payload.then_job() {
+                    let (_, tmp_job) = action.create_job(then_job);
+                    then_job_local = Some(tmp_job);
+                }
                 payload.file_cd();
                 let (_, job) = action.create_job(payload.file_job());
+
                 payload.mark_time();
                 job.start();
+
                 tokio::spawn(async move {
                     job.to_wait().await;
                     if !job.is_dead() {
                         payload.print_report();
-                        //let (_, job) = action.create_job(payload.then_command());
+                        if let Some(then_job_runner) = then_job_local {
+                            payload.then_cd();
+                            then_job_runner.start();
+                        }
                     }
                 });
             }
