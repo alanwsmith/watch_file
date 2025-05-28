@@ -19,6 +19,8 @@ struct Payload {
     quiet: bool,
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
+    start_instant: Option<Instant>,
+    start_time: Option<Local>,
 }
 
 impl Payload {
@@ -64,15 +66,26 @@ impl Payload {
         ))
     }
 
+    pub fn mark_time(&mut self) {
+        self.start_instant = Some(Instant::now());
+    }
+
     pub fn new() -> Result<Payload> {
         let (raw_file_path, raw_then_path) = Payload::get_args()?;
         let payload = Payload {
             quiet: true,
             raw_file_path,
             raw_then_path,
+            start_instant: None,
+            start_time: None,
         };
         payload.validate_paths();
         Ok(payload)
+    }
+
+    pub fn print_report(&self) {
+        let elapsed_time = self.start_instant.unwrap().elapsed();
+        println!(r#"{}"#, elapsed_time.as_millis());
     }
 
     pub fn validate_paths(&self) {
@@ -156,6 +169,8 @@ impl Runner {
                 quiet: matches.get_flag("quiet"),
                 raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
                 raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
+                start_instant: None,
+                start_time: None,
             },
             quiet: matches.get_flag("quiet"),
             // TODO: depreac
@@ -278,14 +293,15 @@ impl RunnerV2 {
                 action.list_jobs().for_each(|(_, job)| {
                     job.delete_now();
                 });
-                let payload = payload.clone();
+                let mut payload = payload.clone();
                 payload.cd_to_file();
                 let (_, job) = action.create_job(payload.watch_command());
+                payload.mark_time();
                 job.start();
                 tokio::spawn(async move {
                     job.to_wait().await;
                     if !job.is_dead() {
-                        println!("asdfasdfasdfds");
+                        payload.print_report();
                     }
                 });
             }
