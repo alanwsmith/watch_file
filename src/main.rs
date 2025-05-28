@@ -17,6 +17,7 @@ use watchexec_signals::Signal;
 
 #[derive(Debug, Clone)]
 struct Payload {
+    initial_dir: Option<PathBuf>,
     quiet: bool,
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
@@ -26,6 +27,7 @@ struct Payload {
 
 impl Payload {
     pub fn file_cd(&self) -> Result<()> {
+        std::env::set_current_dir(self.initial_dir.as_ref().unwrap())?;
         if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
             std::env::set_current_dir(parent_dir)?;
         }
@@ -56,7 +58,7 @@ impl Payload {
         })
     }
 
-    pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>, bool)> {
+    pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>, bool, Option<PathBuf>)> {
         let matches = command!()
             .arg(
                 arg!([file_path])
@@ -76,6 +78,7 @@ impl Payload {
             matches.get_one::<PathBuf>("file_path").cloned(),
             matches.get_one::<PathBuf>("then").cloned(),
             matches.get_flag("verbose"),
+            std::env::current_dir().ok(),
         ))
     }
 
@@ -84,8 +87,9 @@ impl Payload {
     }
 
     pub fn new() -> Result<Payload> {
-        let (raw_file_path, raw_then_path, verbose) = Payload::get_args()?;
+        let (raw_file_path, raw_then_path, verbose, initial_dir) = Payload::get_args()?;
         let payload = Payload {
+            initial_dir,
             quiet: true,
             raw_file_path,
             raw_then_path,
@@ -116,6 +120,10 @@ impl Payload {
     }
 
     pub fn validate_paths(&self) {
+        if let None = &self.initial_dir {
+            eprintln!("ERROR: getting current direction. Can not continue");
+            std::process::exit(1);
+        }
         if let Some(file_path) = &self.raw_file_path {
             if !file_path.exists() {
                 eprintln!("ERROR: {} does not exist", file_path.display());
@@ -182,6 +190,7 @@ impl Runner {
         }
         let runner = Runner {
             payload: Payload {
+                initial_dir: None,
                 quiet: matches.get_flag("quiet"),
                 raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
                 raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
