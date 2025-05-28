@@ -299,6 +299,10 @@ impl RunnerV2 {
 
     pub async fn run(&self) -> Result<()> {
         clearscreen::clear().unwrap();
+        println!("Watching: {}", self.payload.watch_path().display());
+        if let Some(then_path) = self.payload.raw_then_path.as_ref() {
+            println!("Then Running: {}", then_path.display());
+        }
         let wx = Watchexec::default();
         let payload = self.payload.clone();
         let watch_path = WatchedPath::non_recursive(self.payload.watch_path());
