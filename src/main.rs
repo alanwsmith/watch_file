@@ -58,7 +58,7 @@ impl Runner {
             eprintln!("ERROR: {} does not exist", requested_path.display());
             std::process::exit(1);
         }
-        let r = Runner {
+        let runner = Runner {
             quiet: matches.get_flag("quiet"),
             raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
             raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
@@ -66,8 +66,8 @@ impl Runner {
             // method calls on raw_file_path
             requested_path,
         };
-        r.validate_paths();
-        r
+        runner.validate_paths();
+        runner
     }
 
     pub async fn run(&self) -> Result<()> {
