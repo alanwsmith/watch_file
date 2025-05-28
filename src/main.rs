@@ -1,6 +1,7 @@
 #![allow(unused)]
 use anyhow::Result;
 use anyhow::anyhow;
+use chrono::DateTime;
 use chrono::Local;
 use clap::{arg, command};
 use std::path::Path;
@@ -20,7 +21,7 @@ struct Payload {
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
     start_instant: Option<Instant>,
-    start_time: Option<Local>,
+    start_time: Option<DateTime<Local>>,
 }
 
 impl Payload {
@@ -42,6 +43,14 @@ impl Payload {
                 .display()
                 .to_string()
         )
+    }
+
+    pub fn dispay_cd_to_file(&self) -> String {
+        if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
+            format!("\ncd: {}", parent_dir.display().to_string())
+        } else {
+            "".to_string()
+        }
     }
 
     pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
@@ -68,6 +77,7 @@ impl Payload {
 
     pub fn mark_time(&mut self) {
         self.start_instant = Some(Instant::now());
+        self.start_time = Some(Local::now());
     }
 
     pub fn new() -> Result<Payload> {
@@ -85,7 +95,17 @@ impl Payload {
 
     pub fn print_report(&self) {
         let elapsed_time = self.start_instant.unwrap().elapsed();
-        println!(r#"{}"#, elapsed_time.as_millis());
+        println!(
+            r#"------------------------------------
+started:   {}{}
+duration:  {}ms"#,
+            self.start_time
+                .as_ref()
+                .unwrap()
+                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            self.dispay_cd_to_file(),
+            elapsed_time.as_millis()
+        );
     }
 
     pub fn validate_paths(&self) {
