@@ -14,13 +14,6 @@ use watchexec::command::Program;
 use watchexec::command::Shell;
 use watchexec_signals::Signal;
 
-struct Runner {
-    payload: Payload,
-    quiet: bool,
-    raw_file_path: Option<PathBuf>,
-    requested_path: PathBuf,
-}
-
 #[derive(Debug, Clone)]
 struct Payload {
     quiet: bool,
@@ -29,6 +22,17 @@ struct Payload {
 }
 
 impl Payload {
+    pub fn command(&self) -> Arc<WatchCommand> {
+        Arc::new(WatchCommand {
+            program: Program::Shell {
+                shell: Shell::new("bash"),
+                command: "ls".into(),
+                args: vec![],
+            },
+            options: Default::default(),
+        })
+    }
+
     pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
         let matches = command!()
             .arg(
@@ -76,6 +80,17 @@ impl Payload {
             }
         }
     }
+
+    pub fn watch_path(&self) -> PathBuf {
+        self.raw_file_path.as_ref().unwrap().to_path_buf()
+    }
+}
+
+struct Runner {
+    payload: Payload,
+    quiet: bool,
+    raw_file_path: Option<PathBuf>,
+    requested_path: PathBuf,
 }
 
 impl Runner {
@@ -222,14 +237,33 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-struct RunnerV2 {}
+struct RunnerV2 {
+    payload: Payload,
+}
 
 impl RunnerV2 {
     pub fn new(payload: Payload) -> Result<RunnerV2> {
-        Ok(RunnerV2 {})
+        Ok(RunnerV2 { payload })
     }
 
     pub async fn run(&self) -> Result<()> {
+        let wx = Watchexec::default();
+        let payload = self.payload.clone();
+        let watch_path = WatchedPath::non_recursive(self.payload.watch_path());
+        wx.config.pathset(vec![watch_path]);
+        wx.config.on_action(move |mut action| {
+            let payload = payload.clone();
+            if action.signals().any(|sig| sig == Signal::Interrupt) {
+                action.quit(); // Needed for Ctrl+c
+            } else {
+                action.list_jobs().for_each(|(_, job)| {
+                    job.delete_now();
+                });
+                let (_, job) = action.create_job(payload.command());
+            }
+            action
+        });
+        // let _ = wx.main().await?;
         Ok(())
     }
 }
