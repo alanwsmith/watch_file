@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::Result;
 use anyhow::anyhow;
 use chrono::Local;
@@ -14,10 +15,67 @@ use watchexec::command::Shell;
 use watchexec_signals::Signal;
 
 struct Runner {
+    payload: Payload,
+    quiet: bool,
+    raw_file_path: Option<PathBuf>,
+    requested_path: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+struct Payload {
     quiet: bool,
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
-    requested_path: PathBuf,
+}
+
+impl Payload {
+    pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
+        let matches = command!()
+            .arg(
+                arg!([file_path])
+                    .required(true)
+                    .value_parser(clap::value_parser!(PathBuf)),
+            )
+            .arg(arg!(
+    -q --quiet "Only print script output"))
+            .arg(
+                arg!(
+    -t --then <then_path>
+                "Script to run after the main process is done")
+                .value_parser(clap::value_parser!(PathBuf)),
+            )
+            .get_matches();
+        Ok((
+            matches.get_one::<PathBuf>("file_path").cloned(),
+            matches.get_one::<PathBuf>("then").cloned(),
+        ))
+    }
+
+    pub fn new() -> Result<Payload> {
+        let (raw_file_path, raw_then_path) = Payload::get_args()?;
+        let payload = Payload {
+            quiet: true,
+            raw_file_path,
+            raw_then_path,
+        };
+        payload.validate_paths();
+        Ok(payload)
+    }
+
+    pub fn validate_paths(&self) {
+        if let Some(file_path) = &self.raw_file_path {
+            if !file_path.exists() {
+                eprintln!("ERROR: {} does not exist", file_path.display());
+                std::process::exit(1);
+            }
+        }
+        if let Some(then_path) = &self.raw_then_path {
+            if !then_path.exists() {
+                eprintln!("ERROR: {} does not exist", then_path.display());
+                std::process::exit(1);
+            }
+        }
+    }
 }
 
 impl Runner {
@@ -59,14 +117,18 @@ impl Runner {
             std::process::exit(1);
         }
         let runner = Runner {
+            payload: Payload {
+                quiet: matches.get_flag("quiet"),
+                raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
+                raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
+            },
             quiet: matches.get_flag("quiet"),
+            // TODO: depreac
             raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
-            raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
             // TODO: deprecate requested_path to use
             // method calls on raw_file_path
             requested_path,
         };
-        runner.validate_paths();
         runner
     }
 
@@ -140,21 +202,6 @@ impl Runner {
         Ok(result)
     }
 
-    pub fn validate_paths(&self) {
-        if let Some(file_path) = &self.raw_file_path {
-            if !file_path.exists() {
-                eprintln!("ERROR: {} does not exist", file_path.display());
-                std::process::exit(1);
-            }
-        }
-        if let Some(then_path) = &self.raw_then_path {
-            if !then_path.exists() {
-                eprintln!("ERROR: {} does not exist", then_path.display());
-                std::process::exit(1);
-            }
-        }
-    }
-
     pub fn watch_command(&self) -> Arc<WatchCommand> {
         Arc::new(WatchCommand {
             program: Program::Shell {
@@ -169,7 +216,20 @@ impl Runner {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let runner = Runner::new();
+    let payload = Payload::new()?;
+    let runner = RunnerV2::new(payload)?;
     runner.run().await?;
     Ok(())
+}
+
+struct RunnerV2 {}
+
+impl RunnerV2 {
+    pub fn new(payload: Payload) -> Result<RunnerV2> {
+        Ok(RunnerV2 {})
+    }
+
+    pub async fn run(&self) -> Result<()> {
+        Ok(())
+    }
 }
