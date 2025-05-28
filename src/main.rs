@@ -22,6 +22,14 @@ struct Payload {
 }
 
 impl Payload {
+    pub fn cd_to_file(&self) -> Result<()> {
+        if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
+            std::env::set_current_dir(parent_dir).is_ok();
+        }
+
+        Ok(())
+    }
+
     pub fn command(&self) -> Arc<WatchCommand> {
         Arc::new(WatchCommand {
             program: Program::Shell {
@@ -252,18 +260,24 @@ impl RunnerV2 {
         let watch_path = WatchedPath::non_recursive(self.payload.watch_path());
         wx.config.pathset(vec![watch_path]);
         wx.config.on_action(move |mut action| {
-            let payload = payload.clone();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
             } else {
                 action.list_jobs().for_each(|(_, job)| {
                     job.delete_now();
                 });
+                let payload = payload.clone();
+                payload.cd_to_file();
                 let (_, job) = action.create_job(payload.command());
+                job.start();
+                tokio::spawn(async move {
+                    job.to_wait().await;
+                    println!("asdfasdfasdfds");
+                });
             }
             action
         });
-        // let _ = wx.main().await?;
+        let _ = wx.main().await?;
         Ok(())
     }
 }
