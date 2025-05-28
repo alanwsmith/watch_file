@@ -21,7 +21,6 @@ struct Payload {
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
     start_instant: Option<Instant>,
-    start_time: Option<DateTime<Local>>,
 }
 
 impl Payload {
@@ -43,14 +42,6 @@ impl Payload {
                 .display()
                 .to_string()
         )
-    }
-
-    pub fn dispay_cd_to_file(&self) -> String {
-        if let Some(parent_dir) = self.raw_file_path.as_ref().unwrap().parent() {
-            format!("\ncd: {}", parent_dir.display().to_string())
-        } else {
-            "".to_string()
-        }
     }
 
     pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
@@ -77,7 +68,6 @@ impl Payload {
 
     pub fn mark_time(&mut self) {
         self.start_instant = Some(Instant::now());
-        self.start_time = Some(Local::now());
     }
 
     pub fn new() -> Result<Payload> {
@@ -87,7 +77,6 @@ impl Payload {
             raw_file_path,
             raw_then_path,
             start_instant: None,
-            start_time: None,
         };
         payload.validate_paths();
         Ok(payload)
@@ -95,15 +84,17 @@ impl Payload {
 
     pub fn print_report(&self) {
         let elapsed_time = self.start_instant.unwrap().elapsed();
+        let now = Local::now();
+        let ap = if now.format("%p").to_string() == "AM".to_string() {
+            "am"
+        } else {
+            "pm"
+        };
+        let time = format!("{}{}", now.format("%I:%M:%S"), ap);
         println!(
             r#"------------------------------------
-started:   {}{}
-duration:  {}ms"#,
-            self.start_time
-                .as_ref()
-                .unwrap()
-                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            self.dispay_cd_to_file(),
+{:12 } {:>21 }ms"#,
+            time,
             elapsed_time.as_millis()
         );
     }
@@ -190,7 +181,6 @@ impl Runner {
                 raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
                 raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
                 start_instant: None,
-                start_time: None,
             },
             quiet: matches.get_flag("quiet"),
             // TODO: depreac
