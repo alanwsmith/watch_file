@@ -42,6 +42,9 @@ report.
 run the script at FILE_PATH after the
 main process is run. 
 
+- TODO: Handle what happens if the 
+first script errors. 
+
 
 ## NOTES
 
