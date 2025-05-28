@@ -34,11 +34,7 @@ and the time it took to run.
 - DONE: Kills the process and restarts it
 if a change occurs while its still running. 
 
-- DONE: Passing `-v` or `--verbose` turn son  
-an ending timestamp and duration. (Helps
-verify a script ran)
-
-- TODO: Using `-t|--then FILE_PATH` will 
+- DONE: Using `-t|--then FILE_PATH` will 
 run the script at FILE_PATH after the
 main process is run. 
 
@@ -59,6 +55,10 @@ it into your process directly.
 
 
 ## Someday/Maybe Features
+
+- TODO: Put back in? Passing `-v` or `--verbose` turn son  
+an ending timestamp and duration. (Helps
+verify a script ran)
 
 - Figure out how to add a test suite.
 

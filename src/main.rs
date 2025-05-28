@@ -66,8 +66,8 @@ impl Payload {
                     .required(true)
                     .value_parser(clap::value_parser!(PathBuf)),
             )
-            .arg(arg!(
-    -v --verbose "Print ending time and duration"))
+            // .arg(arg!(
+            // -v --verbose "Print ending time and duration"))
             .arg(
                 arg!(
     -t --then <then_path>
@@ -78,7 +78,8 @@ impl Payload {
         Ok((
             matches.get_one::<PathBuf>("file_path").cloned(),
             matches.get_one::<PathBuf>("then").cloned(),
-            matches.get_flag("verbose"),
+            false,
+            //matches.get_flag("verbose"),
             std::env::current_dir().ok(),
         ))
     }
@@ -101,24 +102,26 @@ impl Payload {
         Ok(payload)
     }
 
-    pub fn print_report(&self) {
-        if self.verbose {
-            let elapsed_time = self.start_instant.unwrap().elapsed();
-            let now = Local::now();
-            let ap = if now.format("%p").to_string() == "AM".to_string() {
-                "am"
-            } else {
-                "pm"
-            };
-            let time = format!("{}{}", now.format("%I:%M:%S"), ap);
-            println!(
-                r#"------------------------------------
-{:12 } {:>21 }ms"#,
-                time,
-                elapsed_time.as_millis()
-            );
-        }
-    }
+    // Taking out for now, might do verbose again
+    // at some point, but running without it for now.
+    // pub fn print_report(&self) {
+    //     if self.verbose {
+    //         let elapsed_time = self.start_instant.unwrap().elapsed();
+    //         let now = Local::now();
+    //         let ap = if now.format("%p").to_string() == "AM".to_string() {
+    //             "am"
+    //         } else {
+    //             "pm"
+    //         };
+    //         let time = format!("{}{}", now.format("%I:%M:%S"), ap);
+    //         println!(
+    //             r#"------------------------------------
+    // {:12 } {:>21 }ms"#,
+    //             time,
+    //             elapsed_time.as_millis()
+    //         );
+    //     }
+    // }
 
     pub fn then_cd(&self) -> Result<()> {
         std::env::set_current_dir(self.initial_dir.as_ref().unwrap())?;
@@ -374,7 +377,7 @@ impl RunnerV2 {
                 tokio::spawn(async move {
                     job.to_wait().await;
                     if !job.is_dead() {
-                        payload.print_report();
+                        // payload.print_report();
                         if let Some(then_job_runner) = then_job_local {
                             payload.then_cd();
                             then_job_runner.start();

@@ -1,7 +1,13 @@
 #!/bin/bash
 
 echo "Wait for it..."
-sleep 3
+sleep 1
 echo "The quick brown fox was here"
-echo "Process complete"
+echo "Process complete: example.bash"
+
+
+
+
+
+
 
