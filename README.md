@@ -34,9 +34,9 @@ and the time it took to run.
 - DONE: Kills the process and restarts it
 if a change occurs while its still running. 
 
-- DONE: Passing `-q` or `--quiet` turns off 
-the initial `Watching` and ending
-report.
+- DONE: Passing `-v` or `--verbose` turn son  
+an ending timestamp and duration. (Helps
+verify a script ran)
 
 - TODO: Using `-t|--then FILE_PATH` will 
 run the script at FILE_PATH after the

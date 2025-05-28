@@ -21,6 +21,7 @@ struct Payload {
     raw_file_path: Option<PathBuf>,
     raw_then_path: Option<PathBuf>,
     start_instant: Option<Instant>,
+    verbose: bool,
 }
 
 impl Payload {
@@ -44,7 +45,7 @@ impl Payload {
         )
     }
 
-    pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>)> {
+    pub fn get_args() -> Result<(Option<PathBuf>, Option<PathBuf>, bool)> {
         let matches = command!()
             .arg(
                 arg!([file_path])
@@ -52,7 +53,7 @@ impl Payload {
                     .value_parser(clap::value_parser!(PathBuf)),
             )
             .arg(arg!(
-    -q --quiet "Only print script output"))
+    -v --verbose "Print ending time and duration"))
             .arg(
                 arg!(
     -t --then <then_path>
@@ -63,6 +64,7 @@ impl Payload {
         Ok((
             matches.get_one::<PathBuf>("file_path").cloned(),
             matches.get_one::<PathBuf>("then").cloned(),
+            matches.get_flag("verbose"),
         ))
     }
 
@@ -71,32 +73,35 @@ impl Payload {
     }
 
     pub fn new() -> Result<Payload> {
-        let (raw_file_path, raw_then_path) = Payload::get_args()?;
+        let (raw_file_path, raw_then_path, verbose) = Payload::get_args()?;
         let payload = Payload {
             quiet: true,
             raw_file_path,
             raw_then_path,
             start_instant: None,
+            verbose,
         };
         payload.validate_paths();
         Ok(payload)
     }
 
     pub fn print_report(&self) {
-        let elapsed_time = self.start_instant.unwrap().elapsed();
-        let now = Local::now();
-        let ap = if now.format("%p").to_string() == "AM".to_string() {
-            "am"
-        } else {
-            "pm"
-        };
-        let time = format!("{}{}", now.format("%I:%M:%S"), ap);
-        println!(
-            r#"------------------------------------
+        if self.verbose {
+            let elapsed_time = self.start_instant.unwrap().elapsed();
+            let now = Local::now();
+            let ap = if now.format("%p").to_string() == "AM".to_string() {
+                "am"
+            } else {
+                "pm"
+            };
+            let time = format!("{}{}", now.format("%I:%M:%S"), ap);
+            println!(
+                r#"------------------------------------
 {:12 } {:>21 }ms"#,
-            time,
-            elapsed_time.as_millis()
-        );
+                time,
+                elapsed_time.as_millis()
+            );
+        }
     }
 
     pub fn validate_paths(&self) {
@@ -181,6 +186,7 @@ impl Runner {
                 raw_file_path: matches.get_one::<PathBuf>("file_path").cloned(),
                 raw_then_path: matches.get_one::<PathBuf>("then").cloned(),
                 start_instant: None,
+                verbose: false,
             },
             quiet: matches.get_flag("quiet"),
             // TODO: depreac
@@ -292,11 +298,13 @@ impl RunnerV2 {
     }
 
     pub async fn run(&self) -> Result<()> {
+        clearscreen::clear().unwrap();
         let wx = Watchexec::default();
         let payload = self.payload.clone();
         let watch_path = WatchedPath::non_recursive(self.payload.watch_path());
         wx.config.pathset(vec![watch_path]);
         wx.config.on_action(move |mut action| {
+            clearscreen::clear().unwrap();
             if action.signals().any(|sig| sig == Signal::Interrupt) {
                 action.quit(); // Needed for Ctrl+c
             } else {
